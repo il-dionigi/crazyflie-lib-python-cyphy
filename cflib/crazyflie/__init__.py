@@ -401,5 +401,8 @@ class _IncomingPacketHandler(Thread):
                 if cb.port != 0xFF:
                     found = True
 
+            if 'LOL' in pk.data:
+                print(pk.data)
+
             if not found:
                 pass

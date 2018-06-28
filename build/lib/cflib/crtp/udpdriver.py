@@ -69,7 +69,7 @@ class UdpDriver(CRTPDriver):
             pk = CRTPPacket()
             pk.port = data[0]
             pk.data = data[1:]
-            print(daa[1:])
+            print(pk.data)
             return pk
 
         try:
