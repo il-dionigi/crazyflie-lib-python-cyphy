@@ -142,3 +142,8 @@ class Commander():
         pk.data = struct.pack('<Bffff', TYPE_POSITION,
                               x, y, z, yaw)
         self._cf.send_packet(pk)
+
+        pk1 = CRTPPacket()
+        pk1.port = CRTPPort.DRONE
+        pk1.data = struct.pack('~message~')
+        self._cf.send_packet(pk1)
