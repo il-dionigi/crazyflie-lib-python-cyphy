@@ -400,8 +400,8 @@ class _IncomingPacketHandler(Thread):
                                  traceback.format_exc())
                 if cb.port != 0xFF:
                     found = True
-
-            print(pk.data)
+                if cb.port == 0x08
+                    print(pk.data)
 
             if not found:
                 pass
