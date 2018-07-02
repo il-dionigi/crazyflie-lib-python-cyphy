@@ -56,7 +56,9 @@ __author__ = 'Bitcraze AB'
 __all__ = ['Crazyflie']
 
 logger = logging.getLogger(__name__)
-
+code = '~'
+buf = ''
+recording = 0
 
 class State:
     """Stat of the connection procedure"""
@@ -400,8 +402,17 @@ class _IncomingPacketHandler(Thread):
                                  traceback.format_exc())
                 if cb.port != 0xFF:
                     found = True
-                if cb.port == 0x08
-                    print(pk.data)
+            #if 'CYPHY' in pk.data:
+            if pk.port == 8:
+                print(pk.data)
+            '''for i in range(len(pk.data)):
+                if pk.data[i] == code:
+                    recording = 1 - recording #0->1, 1->0, start/stop recording
+                    if (recording == 0):
+                        print(buf) #stopped recording, dump the contents 
+                        buf = ''
+                    elif recording:
+                        buf += pk.data[i]'''
 
             if not found:
                 pass

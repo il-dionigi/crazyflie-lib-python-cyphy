@@ -89,6 +89,15 @@ class Commander():
         pk.data = struct.pack('<B', TYPE_STOP)
         self._cf.send_packet(pk)
 
+    def send_message(self, str):
+        """
+        Send STOP setpoing, stopping the motors and (potentially) falling.
+        """
+        pk = CRTPPacket()
+        pk.port = CRTPPort.DRONE
+        pk.data = struct.pack('<Bs', TYPE_STOP, str)
+        self._cf.send_packet(pk)
+
     def send_velocity_world_setpoint(self, vx, vy, vz, yawrate):
         """
         Send Velocity in the world frame of reference setpoint.
@@ -142,8 +151,3 @@ class Commander():
         pk.data = struct.pack('<Bffff', TYPE_POSITION,
                               x, y, z, yaw)
         self._cf.send_packet(pk)
-
-        pk1 = CRTPPacket()
-        pk1.port = CRTPPort.DRONE
-        pk1.data = struct.pack('~message~')
-        self._cf.send_packet(pk1)

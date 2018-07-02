@@ -145,6 +145,8 @@ class UsbDriver(CRTPDriver):
             dataOut = (pk.header,)
             dataOut += pk.datat
             self.cfusb.send_packet(dataOut)
+
+            
         except queue.Full:
             if self.link_error_callback:
                 self.link_error_callback(
