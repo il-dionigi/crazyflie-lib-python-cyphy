@@ -47,10 +47,10 @@ class CRTPPort:
     LOGGING = 0x05
     LOCALIZATION = 0x06
     COMMANDER_GENERIC = 0x07
-    DRONE = 0x08
     PLATFORM = 0x0D
     DEBUGDRIVER = 0x0E
     LINKCTRL = 0x0F
+    DRONE = 0x2D #CYPHY
     ALL = 0xFF
 
 
