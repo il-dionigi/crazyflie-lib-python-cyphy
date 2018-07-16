@@ -89,12 +89,12 @@ class Commander():
         pk.data = struct.pack('<B', TYPE_STOP)
         self._cf.send_packet(pk)
 
-    def send_message(self, str):
+    def send_message(self, str, hdr):
         """
         Send STOP setpoing, stopping the motors and (potentially) falling.
         """
         for i in range(len(str)/29 + 1):
-            pk = CRTPPacket()
+            pk = CRTPPacket(hdr, None)
             pk.port = CRTPPort.DRONE
             pk.data = struct.pack('<30s', str[29*i:(30*(i+1))-(i+1)])
             self._cf.send_packet(pk)

@@ -403,7 +403,7 @@ class _IncomingPacketHandler(Thread):
                 if cb.port != 0xFF:
                     found = True
             #if 'CYPHY' in pk.data:
-            if pk.port == 8:
+            if pk.port == 0:
                 print(pk.data)
             '''for i in range(len(pk.data)):
                 if pk.data[i] == code:
