@@ -152,3 +152,7 @@ class Commander():
         pk.data = struct.pack('<Bffff', TYPE_POSITION,
                               x, y, z, yaw)
         self._cf.send_packet(pk)
+
+    def send_new_target(self, address, channel, dataRate):
+        send_message( '{s:x<{n}}'.format(s=str(hex(address))[2:], n=8) + str(channel) + str(dataRate), 1)
+        # 1 is the header for new_target in the C code
