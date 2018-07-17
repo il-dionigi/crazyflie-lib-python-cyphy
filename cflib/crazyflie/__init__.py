@@ -51,6 +51,7 @@ from .param import Param
 from .platformservice import PlatformService
 from .toccache import TocCache
 from cflib.utils.callbacks import Caller
+from cflib.crtp.crtpstack import CRTPPort
 
 __author__ = 'Bitcraze AB'
 __all__ = ['Crazyflie']

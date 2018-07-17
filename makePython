@@ -1,3 +1,4 @@
-sudo pip3 uninstall cflib;
+#!/bin/bash
+sudo pip3 uninstall cflib
 sudo pip install -e ./
 sudo ./setup_linux.sh
