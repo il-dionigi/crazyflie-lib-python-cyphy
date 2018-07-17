@@ -95,7 +95,7 @@ class Commander():
         """
         for i in range(len(str)/29 + 1):
             pk = CRTPPacket(hdr, None)
-            pk.port = CRTPPort.DRONE
+            pk.port = CRTPPort.CONSOLE
             pk.data = struct.pack('<30s', str[29*i:(30*(i+1))-(i+1)])
             self._cf.send_packet(pk)
 
