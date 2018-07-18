@@ -170,12 +170,14 @@ class Crazyradio:
     # Dongle configuration
     def set_channel(self, channel):
         """ Set the radio channel to be used """
+        # print("Channel is: " + str(channel))
         if channel != self.current_channel:
             _send_vendor_setup(self.handle, SET_RADIO_CHANNEL, channel, 0, ())
             self.current_channel = channel
 
     def set_address(self, address):
         """ Set the radio address to be used"""
+        # print("Address is: " + str(address))
         if len(address) != 5:
             raise Exception('Crazyradio: the radio address shall be 5'
                             ' bytes long')
@@ -185,6 +187,7 @@ class Crazyradio:
 
     def set_data_rate(self, datarate):
         """ Set the radio datarate to be used """
+        # print("Data rate is: " + str(datarate))
         if datarate != self.current_datarate:
             _send_vendor_setup(self.handle, SET_DATA_RATE, datarate, 0, ())
             self.current_datarate = datarate

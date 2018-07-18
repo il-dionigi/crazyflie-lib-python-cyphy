@@ -321,8 +321,6 @@ class RadioDriver(CRTPDriver):
 
     def scan_interface(self, address):
         """ Scan interface for Crazyflies """
-        print('In radio scanner!')
-
         if self._radio_manager is None:
             try:
                 self._radio_manager = _RadioManager(0)

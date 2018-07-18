@@ -1,4 +1,6 @@
 #!/bin/bash
+sudo pip uninstall cflib
 sudo pip3 uninstall cflib
 sudo pip install -e ./
+sudo pip3 install -e ./
 sudo ./setup_linux.sh

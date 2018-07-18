@@ -64,6 +64,7 @@ def scan_interfaces(address=None):
             instance = driverClass()
             found = instance.scan_interface(address)
             available += found
+            print('Found: %s in class %s', found, driverClass)
         except Exception:
             raise
     return available
