@@ -154,5 +154,5 @@ class Commander():
         self._cf.send_packet(pk)
 
     def send_new_target(self, address, channel, dataRate):
-        self.send_message( '{s:x<{n}}'.format(s=str(hex(address))[2:], n=8) + str(channel) + str(dataRate), 1)
+        self.send_message( '{s:x<{n}}'.format(s=str(int(address)), n='8') + ',' + str(channel) + ',' + str(dataRate) + ',', 1)
         # 1 is the header for new_target in the C code

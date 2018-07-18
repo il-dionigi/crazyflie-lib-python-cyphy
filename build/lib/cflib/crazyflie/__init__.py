@@ -51,6 +51,7 @@ from .param import Param
 from .platformservice import PlatformService
 from .toccache import TocCache
 from cflib.utils.callbacks import Caller
+from cflib.crtp.crtpstack import CRTPPort
 
 __author__ = 'Bitcraze AB'
 __all__ = ['Crazyflie']
@@ -403,7 +404,9 @@ class _IncomingPacketHandler(Thread):
                 if cb.port != 0xFF:
                     found = True
             #if 'CYPHY' in pk.data:
-            if pk.port == 8:
+            #print(pk.port)
+            #print(pk.data)
+            if pk.port == CRTPPort.CONSOLE:
                 print(pk.data)
             '''for i in range(len(pk.data)):
                 if pk.data[i] == code:

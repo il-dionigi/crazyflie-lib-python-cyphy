@@ -89,14 +89,15 @@ class Commander():
         pk.data = struct.pack('<B', TYPE_STOP)
         self._cf.send_packet(pk)
 
-    def send_message(self, str):
+    def send_message(self, str, hdr):
         """
         Send STOP setpoing, stopping the motors and (potentially) falling.
         """
-        pk = CRTPPacket()
-        pk.port = CRTPPort.DRONE
-        pk.data = struct.pack('<Bs', TYPE_STOP, str)
-        self._cf.send_packet(pk)
+        for i in range(len(str)/29 + 1):
+            pk = CRTPPacket(hdr, None)
+            pk.port = CRTPPort.CONSOLE
+            pk.data = struct.pack('<30s', str[29*i:(30*(i+1))-(i+1)])
+            self._cf.send_packet(pk)
 
     def send_velocity_world_setpoint(self, vx, vy, vz, yawrate):
         """
@@ -151,3 +152,7 @@ class Commander():
         pk.data = struct.pack('<Bffff', TYPE_POSITION,
                               x, y, z, yaw)
         self._cf.send_packet(pk)
+
+    def send_new_target(self, address, channel, dataRate):
+        self.send_message( '{s:x<{n}}'.format(s=str(int(address)), n='8') + ',' + str(channel) + ',' + str(dataRate) + ',', 1)
+        # 1 is the header for new_target in the C code
