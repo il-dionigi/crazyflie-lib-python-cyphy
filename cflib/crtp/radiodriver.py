@@ -98,8 +98,8 @@ ignoreCounter = 0
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ADDR_A = [0xe7, 0xe7, 0xe7, 0xe7, 0xe7]
-DEFAULT_ADDR = 0xE7E7E7E7E7
+DEFAULT_ADDR_A = [0xe7, 0xe7, 0xe7, 0xe7, 0xe8]
+DEFAULT_ADDR = 0xE7E7E7E7E8
 
 
 class _SharedRadio():
