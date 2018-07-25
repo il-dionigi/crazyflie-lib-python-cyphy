@@ -408,7 +408,7 @@ class _IncomingPacketHandler(Thread):
             #print(pk.data)
             if pk.port == CRTPPort.CONSOLE:
 				if pk.channel == 0:
-                	print(pk.data) #text
+                    print(pk.data) #text
 				else:
 					print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
 					print(pk.data)
