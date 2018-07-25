@@ -39,6 +39,11 @@ import struct
 import sys
 import threading
 
+#aesgcm functions
+from . import aesgcm_functions as aesgcm
+#cryptography exceptions
+import cryptography.exceptions as CrypExc
+
 from .crtpstack import CRTPPacket
 from .exceptions import WrongUriType
 from cflib.crtp.crtpdriver import CRTPDriver
@@ -53,13 +58,48 @@ else:
 __author__ = 'Bitcraze AB'
 __all__ = ['RadioDriver']
 
+HEADER_POSITION = 0
+PID_POSITION = 1
+
+AD_START_POSITION = 0
+IV_START_POSITION = 2
+TAG_START_POSITION = 6
+DATA_START_POSITION = 10
+
+IV_END_POSITION = 6#exclusive end
+TAG_END_POSITION = 10#exclusive end
+
+IGNORE_HEADER = 0xFF
+
+MAX_TAG_LENGTH = 4
+
+DATA_LENGTH_MASK = 0x1F
+PID_NBR_MASK = 0x60
+MAX_DATA_IN_FIRST_PACKET = 20
+PID_MULTI_PACKET_MASK = 0x80
+
+HEADER_PORT_CHANNEL_MASK = 0xF3
+HEADER_PORT_MASK = 0xF0
+HEADER_CHANNEL_MASK = 0x03
+
+CIPHERED_PORT = 0x0B
+CIPHERED_CHANNEL = 0x00
+
+pid = 0
+multipacket = False
+recPid = 0
+recAuthData = bytes()
+recInitVector = bytes()
+recTag = bytes()
+recCipherPackageData = bytes()
+prePid = 100
+messageComplete = False
+ignoreCounter = 0
+
 logger = logging.getLogger(__name__)
 
-_nr_of_retries = 100
-_nr_of_arc_retries = 3
-
-DEFAULT_ADDR_A = [0xe7, 0xe7, 0xe7, 0xe7, 0xe8]
-DEFAULT_ADDR = 0xE7E7E7E7E8
+DEFAULT_ADDR_A = [0xe7, 0xe7, 0xe7, 0xe7, 0xe7]
+DEFAULT_ADDR = 0xE7E7E7E7E7
 
 
 class _SharedRadio():
@@ -109,7 +149,7 @@ class _RadioManager():
             if _RadioManager._radios[self._devid].usage_counter == 0:
                 try:
                     _RadioManager._radios[self._devid].radio.close()
-                except Exception:
+                except:
                     pass
                 _RadioManager._radios[self._devid] = None
 
@@ -194,7 +234,7 @@ class RadioDriver(CRTPDriver):
 
         with self._radio_manager as cradio:
             if cradio.version >= 0.4:
-                cradio.set_arc(_nr_of_arc_retries)
+                cradio.set_arc(10)
             else:
                 logger.warning('Radio version <0.4 will be obsoleted soon!')
 
@@ -215,27 +255,201 @@ class RadioDriver(CRTPDriver):
         self.link_error_callback = link_error_callback
 
     def receive_packet(self, time=0):
+        global prePid
+        global recPid
+        global recAuthData
+        global recInitVector
+        global recTag
+        global recCipherPackageData
+        global messageComplete
+        global ignoreCounter
+
+        rp = CRTPPacket()
         """
         Receive a packet though the link. This call is blocking but will
         timeout and return None if a timeout is supplied.
         """
         if time == 0:
             try:
-                return self.in_queue.get(False)
+                rp = self.in_queue.get(False)
             except queue.Empty:
                 return None
         elif time < 0:
             try:
-                return self.in_queue.get(True)
+                rp = self.in_queue.get(True)
             except queue.Empty:
                 return None
         else:
             try:
-                return self.in_queue.get(True, time)
+                rp = self.in_queue.get(True, time)
             except queue.Empty:
                 return None
+        
+
+        #filter the ignore header and push through.
+        if (rp.data[HEADER_POSITION] == IGNORE_HEADER or rp.get_header() == IGNORE_HEADER):
+            return rp
+            
+        '''
+        if ((rp.get_header() & 0xF0) == 0x00):
+            print('Dropped 0? header: 0x%02x' % rp.get_header())
+            print('Dropped 0? data: ' + '' .join("0x%02x " % b for b in rp.data))
+            return rp
+        '''
+        
+
+        if (rp.data[PID_POSITION] & PID_NBR_MASK) != prePid:
+            
+            '''
+            Disassemble the packet into arrays for decryption.
+            Any packet with a different PID from the previous 
+            packet is passed through this code.
+            '''
+            prePid = rp.data[PID_POSITION] & PID_NBR_MASK
+            
+            dataLength = (rp.data[PID_POSITION] & DATA_LENGTH_MASK)
+            
+            if dataLength > MAX_DATA_IN_FIRST_PACKET:
+                dataLength = MAX_DATA_IN_FIRST_PACKET
+            
+            recAuthData = bytes([rp.data[HEADER_POSITION] & HEADER_PORT_CHANNEL_MASK])
+            recAuthData += bytes([rp.data[PID_POSITION]])
+            
+            recInitVector = bytes()
+            for byte in rp.data[IV_START_POSITION:IV_END_POSITION]:
+                recInitVector += bytes([byte])
+            
+            recTag = bytes()
+            for byte in rp.data[TAG_START_POSITION:TAG_END_POSITION]:
+                recTag +=bytes([byte])
+            
+            recCipherPackageData = bytes()
+            for byte in rp.data[DATA_START_POSITION:]:
+                recCipherPackageData += bytes([byte])
+            
+            if (rp.data[PID_POSITION] & PID_MULTI_PACKET_MASK) != PID_MULTI_PACKET_MASK:
+                messageComplete = True
+            else :
+                messageComplete = False
+                
+                
+        elif (rp.data[PID_POSITION] & PID_NBR_MASK) == prePid:
+            '''
+            If a packet has the same PID as the previous packet
+            the packet is passed through here to complete the previous packet.
+            '''
+            
+            prePid = rp.data[PID_POSITION] & PID_NBR_MASK
+        
+            dataLength = (rp.data[PID_POSITION] & DATA_LENGTH_MASK) - MAX_DATA_IN_FIRST_PACKET
+            
+            for byte in rp.data[2:]:
+                recCipherPackageData += bytes([byte])
+            
+            messageComplete = True
+            
+        
+        if messageComplete:
+            '''
+            When a packet is assembled and ready for decryption this part of the code is run.
+            '''
+            messageComplete = False
+            
+            prePid = 100
+            rpHeader = recAuthData[HEADER_POSITION]
+            
+            rp.data = bytearray()
+            
+            rp.set_header((rpHeader & HEADER_PORT_MASK) >> 4, rpHeader & HEADER_CHANNEL_MASK)
+            
+            try:
+                rp.data = aesgcm.decrypt(recAuthData, recInitVector, recTag, recCipherPackageData)
+            except ValueError:
+                print('          Tag status: Value error')
+            except CrypExc.InvalidTag:
+                print('          Tag status: Invalid Tag')
+            except CrypExc.InvalidKey:
+                print('          Tag status: Invalid Key')
+            except CrypExc.InvalidSignature:
+                print('          Tag status: Invalid Signature')
+                
+            return rp
+        
 
     def send_packet(self, pk):
+        global pid
+        global multipacket
+        
+        if(pk.get_header() == IGNORE_HEADER):
+            self.out_queue.put(pk, True, 2)
+            
+        '''
+        Sending a packet. The packet gets a PID, the length is determined, 
+        additional data is added, IV generated and encrypted ready to send.
+        
+        '''
+        
+    
+        pid += 1
+        if pid > 3: 
+            pid = 0
+        
+        if(len(pk.data) > MAX_DATA_IN_FIRST_PACKET):
+            dataLength = MAX_DATA_IN_FIRST_PACKET
+            multipacket = true
+        else: 
+            dataLength = len(pk.data)
+        
+        ad = bytes([(pk.get_header() & HEADER_PORT_CHANNEL_MASK)])
+        
+        if multipacket:
+            pidbyte = (PID_MULTI_PACKET_MASK | ((pid << 5) & PID_NBR_MASK) | (len(pk.data)))
+        else:
+            pidbyte = (((pid << 5) & PID_NBR_MASK) | (len(pk.data)))
+        
+        
+        
+        ad += bytes([pidbyte])
+        
+        clear = bytes()
+        for byte in pk.data:
+            clear += bytes([byte])
+        
+        iv, tag, ciphertext = aesgcm.encrypt(ad, clear)
+        
+        fp = CRTPPacket()
+        
+        fp.set_header(CIPHERED_PORT, CIPHERED_CHANNEL)
+        fp.data = bytearray([pk.get_header()])
+        fp.data += bytearray([pidbyte])
+        fp.data += bytearray(iv)
+        fp.data += bytearray(tag[:MAX_TAG_LENGTH])
+        fp.data += bytearray(ciphertext[:dataLength])
+        
+        
+        
+        try:
+            self.out_queue.put(fp, True, 2)
+        except queue.Full:
+            if self.link_error_callback:
+                self.link_error_callback('RadioDriver: Could not send packet'
+                                         ' to copter')
+        '''
+        If a original packet is too large the packet is split, 
+        the second part is sent with the following code.
+        '''
+        if multipacket:
+            fp.data = bytearray([pk.get_header()])
+            fp.data += bytearray([pidbyte])
+            fp.data += bytearray(ciphertext[dataLength:])
+            try:
+                self.out_queue.put(fp, True, 2)
+            except queue.Full:
+                if self.link_error_callback:
+                    self.link_error_callback('RadioDriver: Could not send packet'
+                                         ' to copter')
+        
+        '''
         """ Send the packet pk though the link """
         try:
             self.out_queue.put(pk, True, 2)
@@ -243,6 +457,7 @@ class RadioDriver(CRTPDriver):
             if self.link_error_callback:
                 self.link_error_callback('RadioDriver: Could not send packet'
                                          ' to copter')
+        '''
 
     def pause(self):
         self._thread.stop()
@@ -321,6 +536,7 @@ class RadioDriver(CRTPDriver):
 
     def scan_interface(self, address):
         """ Scan interface for Crazyflies """
+
         if self._radio_manager is None:
             try:
                 self._radio_manager = _RadioManager(0)
@@ -391,6 +607,8 @@ class _RadioDriverThread(threading.Thread):
     Radio link receiver thread used to read data from the
     Crazyradio USB driver. """
 
+    TRIES_BEFORE_DISCON = 10
+
     def __init__(self, radio_manager, inQueue, outQueue,
                  link_quality_callback, link_error_callback, link):
         """ Create the object """
@@ -401,7 +619,7 @@ class _RadioDriverThread(threading.Thread):
         self._sp = False
         self._link_error_callback = link_error_callback
         self._link_quality_callback = link_quality_callback
-        self._retry_before_disconnect = _nr_of_retries
+        self._retry_before_disconnect = _RadioDriverThread.TRIES_BEFORE_DISCON
         self._retries = collections.deque()
         self._retry_sum = 0
 
@@ -497,7 +715,8 @@ class _RadioDriverThread(threading.Thread):
                         self._link_error_callback is not None):
                     self._link_error_callback('Too many packets lost')
                 continue
-            self._retry_before_disconnect = _nr_of_retries
+            self._retry_before_disconnect = \
+                _RadioDriverThread.TRIES_BEFORE_DISCON
 
             data = ackStatus.data
 
@@ -535,13 +754,3 @@ class _RadioDriverThread(threading.Thread):
                         dataOut.append(ord(X))
             else:
                 dataOut.append(0xFF)
-
-
-def set_retries_before_disconnect(nr_of_retries):
-    global _nr_of_retries
-    _nr_of_retries = nr_of_retries
-
-
-def set_retries(nr_of_arc_retries):
-    global _nr_of_arc_retries
-    _nr_of_arc_retries = nr_of_arc_retries
