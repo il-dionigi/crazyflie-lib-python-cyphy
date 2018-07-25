@@ -407,12 +407,12 @@ class _IncomingPacketHandler(Thread):
             #print(pk.port)
             #print(pk.data)
             if pk.port == CRTPPort.CONSOLE:
-				if pk.channel == 0:
+                if pk.channel == 0:
                     print(pk.data) #text
-				else:
-					print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
-					print(pk.data)
-			
+                else:
+                    print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
+                    print(pk.data)
+            
             '''for i in range(len(pk.data)):
                 if pk.data[i] == code:
                     recording = 1 - recording #0->1, 1->0, start/stop recording
