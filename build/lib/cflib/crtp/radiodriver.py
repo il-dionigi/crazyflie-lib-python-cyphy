@@ -55,9 +55,6 @@ __all__ = ['RadioDriver']
 
 logger = logging.getLogger(__name__)
 
-_nr_of_retries = 100
-_nr_of_arc_retries = 3
-
 DEFAULT_ADDR_A = [0xe7, 0xe7, 0xe7, 0xe7, 0xe8]
 DEFAULT_ADDR = 0xE7E7E7E7E8
 
@@ -109,7 +106,7 @@ class _RadioManager():
             if _RadioManager._radios[self._devid].usage_counter == 0:
                 try:
                     _RadioManager._radios[self._devid].radio.close()
-                except Exception:
+                except:
                     pass
                 _RadioManager._radios[self._devid] = None
 
@@ -194,7 +191,7 @@ class RadioDriver(CRTPDriver):
 
         with self._radio_manager as cradio:
             if cradio.version >= 0.4:
-                cradio.set_arc(_nr_of_arc_retries)
+                cradio.set_arc(10)
             else:
                 logger.warning('Radio version <0.4 will be obsoleted soon!')
 
@@ -265,8 +262,7 @@ class RadioDriver(CRTPDriver):
         self._thread.stop()
 
         # Close the USB dongle
-        if self._radio_manager:
-            self._radio_manager.close()
+        self._radio_manager.close()
         self._radio_manager = None
 
         while not self.out_queue.empty():
@@ -321,6 +317,7 @@ class RadioDriver(CRTPDriver):
 
     def scan_interface(self, address):
         """ Scan interface for Crazyflies """
+
         if self._radio_manager is None:
             try:
                 self._radio_manager = _RadioManager(0)
@@ -391,6 +388,8 @@ class _RadioDriverThread(threading.Thread):
     Radio link receiver thread used to read data from the
     Crazyradio USB driver. """
 
+    TRIES_BEFORE_DISCON = 10
+
     def __init__(self, radio_manager, inQueue, outQueue,
                  link_quality_callback, link_error_callback, link):
         """ Create the object """
@@ -401,7 +400,7 @@ class _RadioDriverThread(threading.Thread):
         self._sp = False
         self._link_error_callback = link_error_callback
         self._link_quality_callback = link_quality_callback
-        self._retry_before_disconnect = _nr_of_retries
+        self._retry_before_disconnect = _RadioDriverThread.TRIES_BEFORE_DISCON
         self._retries = collections.deque()
         self._retry_sum = 0
 
@@ -497,7 +496,8 @@ class _RadioDriverThread(threading.Thread):
                         self._link_error_callback is not None):
                     self._link_error_callback('Too many packets lost')
                 continue
-            self._retry_before_disconnect = _nr_of_retries
+            self._retry_before_disconnect = \
+                _RadioDriverThread.TRIES_BEFORE_DISCON
 
             data = ackStatus.data
 
@@ -535,13 +535,3 @@ class _RadioDriverThread(threading.Thread):
                         dataOut.append(ord(X))
             else:
                 dataOut.append(0xFF)
-
-
-def set_retries_before_disconnect(nr_of_retries):
-    global _nr_of_retries
-    _nr_of_retries = nr_of_retries
-
-
-def set_retries(nr_of_arc_retries):
-    global _nr_of_arc_retries
-    _nr_of_arc_retries = nr_of_arc_retries

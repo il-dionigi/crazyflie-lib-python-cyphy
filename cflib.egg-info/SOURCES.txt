@@ -25,6 +25,7 @@ cflib/crazyflie/syncLogger.py
 cflib/crazyflie/toc.py
 cflib/crazyflie/toccache.py
 cflib/crtp/__init__.py
+cflib/crtp/aesgcm_functions.py
 cflib/crtp/crtpdriver.py
 cflib/crtp/crtpstack.py
 cflib/crtp/debugdriver.py

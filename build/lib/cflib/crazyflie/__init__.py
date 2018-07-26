@@ -60,6 +60,9 @@ logger = logging.getLogger(__name__)
 code = '~'
 buf = ''
 recording = 0
+key = unhexlify('02010510020105100201051002010510')
+IV = key
+decipher = AES.new(key,AES.MODE_CBC,IV)
 
 class State:
     """Stat of the connection procedure"""
@@ -374,6 +377,7 @@ class _IncomingPacketHandler(Thread):
                                           channel, channel_mask, cb))
 
     def run(self):
+		global decipher
         while True:
             if self.cf.link is None:
                 time.sleep(1)
@@ -407,7 +411,16 @@ class _IncomingPacketHandler(Thread):
             #print(pk.port)
             #print(pk.data)
             if pk.port == CRTPPort.CONSOLE:
-                print(pk.data)
+                if pk.channel == 0:
+                    print(pk.data) #text
+                else:
+                    print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
+                    print(pk.data)
+					plaintext = decipher.decrypt(pk.data)
+					print("Plaintext: ")
+					print(plaintext)
+					
+            
             '''for i in range(len(pk.data)):
                 if pk.data[i] == code:
                     recording = 1 - recording #0->1, 1->0, start/stop recording
