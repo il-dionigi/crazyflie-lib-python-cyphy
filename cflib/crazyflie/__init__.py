@@ -52,6 +52,9 @@ from .platformservice import PlatformService
 from .toccache import TocCache
 from cflib.utils.callbacks import Caller
 from cflib.crtp.crtpstack import CRTPPort
+from Crypto.Cipher import AES
+import Crypto.Cipher.AES
+import binascii
 
 __author__ = 'Bitcraze AB'
 __all__ = ['Crazyflie']
