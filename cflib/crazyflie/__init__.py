@@ -380,7 +380,7 @@ class _IncomingPacketHandler(Thread):
                                           channel, channel_mask, cb))
 
     def run(self):
-		global decipher
+        global decipher
         while True:
             if self.cf.link is None:
                 time.sleep(1)
@@ -419,10 +419,10 @@ class _IncomingPacketHandler(Thread):
                 else:
                     print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
                     print(pk.data)
-					plaintext = decipher.decrypt(pk.data)
-					print("Plaintext: ")
-					print(plaintext)
-					
+                    plaintext = decipher.decrypt(pk.data)
+                    print("Plaintext: ")
+                    print(plaintext)
+                    
             
             '''for i in range(len(pk.data)):
                 if pk.data[i] == code:
