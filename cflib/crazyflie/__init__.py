@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 code = '~'
 buf = ''
 recording = 0
-key = unhexlify('02010510020105100201051002010510')
+key = binascii.unhexlify('02010510020105100201051002010510')
 IV = key
 decipher = AES.new(key,AES.MODE_CBC,IV)
 
