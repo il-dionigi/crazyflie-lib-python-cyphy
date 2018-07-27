@@ -417,12 +417,16 @@ class _IncomingPacketHandler(Thread):
                 if pk.channel == 0:
                     print(pk.data) #text
                 else:
-                    print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
-                    print(bytes(pk.data))
-                    if len(pk.data) != 16:
+                    print("Channel: " + str(pk.channel) + "hexl/unhexl ")
+					ciphertext = bytearray(pk.data)
+					ciphertext = binascii.hexlify(ciphertext)
+					print(ciphertext)
+					ciphertext = binascii.unhexlify(ciphertext)
+					print(ciphertext)
+                    if len(ciphertext) != 16:
                         print("len not 16!")
                     else:
-                        plaintext = decipher.decrypt((bytes(pk.data)))
+                        plaintext = decipher.decrypt(ciphertext)
                         print("Plaintext: ")
                         print(plaintext)
                     
