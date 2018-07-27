@@ -418,10 +418,13 @@ class _IncomingPacketHandler(Thread):
                     print(pk.data) #text
                 else:
                     print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
-                    print(pk.data)
-                    plaintext = decipher.decrypt((pk.data).decode("utf-8"))
-                    print("Plaintext: ")
-                    print(plaintext)
+                    print(bytes(pk.data))
+                    if len(pk.data) != 16:
+                        print("len not 16!")
+                    else:
+                        plaintext = decipher.decrypt((bytes(pk.data)))
+                        print("Plaintext: ")
+                        print(plaintext)
                     
             
             '''for i in range(len(pk.data)):

@@ -52,6 +52,9 @@ from .platformservice import PlatformService
 from .toccache import TocCache
 from cflib.utils.callbacks import Caller
 from cflib.crtp.crtpstack import CRTPPort
+from Crypto.Cipher import AES
+import Crypto.Cipher.AES
+import binascii
 
 __author__ = 'Bitcraze AB'
 __all__ = ['Crazyflie']
@@ -60,7 +63,7 @@ logger = logging.getLogger(__name__)
 code = '~'
 buf = ''
 recording = 0
-key = unhexlify('02010510020105100201051002010510')
+key = binascii.unhexlify('02010510020105100201051002010510')
 IV = key
 decipher = AES.new(key,AES.MODE_CBC,IV)
 
@@ -377,7 +380,7 @@ class _IncomingPacketHandler(Thread):
                                           channel, channel_mask, cb))
 
     def run(self):
-		global decipher
+        global decipher
         while True:
             if self.cf.link is None:
                 time.sleep(1)
@@ -415,11 +418,14 @@ class _IncomingPacketHandler(Thread):
                     print(pk.data) #text
                 else:
                     print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
-                    print(pk.data)
-					plaintext = decipher.decrypt(pk.data)
-					print("Plaintext: ")
-					print(plaintext)
-					
+                    print(bytes(pk.data))
+                    if len(pk.data) != 16:
+                        print("len not 16!")
+                    else:
+                        plaintext = decipher.decrypt((bytes(pk.data)))
+                        print("Plaintext: ")
+                        print(plaintext)
+                    
             
             '''for i in range(len(pk.data)):
                 if pk.data[i] == code:
