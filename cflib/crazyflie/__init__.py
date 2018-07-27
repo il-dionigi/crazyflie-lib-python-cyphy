@@ -419,7 +419,7 @@ class _IncomingPacketHandler(Thread):
                 else:
                     print("Channel: " + str(pk.channel) + "\n (encrypted)Data: ")
                     print(pk.data)
-                    plaintext = decipher.decrypt(pk.data)
+                    plaintext = decipher.decrypt((pk.data).decode("utf-8"))
                     print("Plaintext: ")
                     print(plaintext)
                     
